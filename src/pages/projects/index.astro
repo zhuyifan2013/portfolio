@@ -1,0 +1,91 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const projects = (await getCollection('projects')).sort(
+  (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
+);
+---
+
+<BaseLayout title="Projects · Portfolio" description="Structured project cards">
+  <h1>Projects</h1>
+  <p class="muted">Structured, repeatable metadata for each project card.</p>
+  <div class="grid">
+    {projects.map((project) => (
+      <a class="card" href={`/projects/${project.slug}/`}>
+        <div class="card__meta">
+          <span class="pill">{project.data.status}</span>
+          <span class="muted">{project.data.publishedAt.toISOString().slice(0, 10)}</span>
+        </div>
+        <h3>{project.data.title}</h3>
+        {project.data.description && <p class="muted">{project.data.description}</p>}
+        {project.data.stack.length > 0 && (
+          <div class="tags">
+            {project.data.stack.map((tag) => (
+              <span class="tag">{tag}</span>
+            ))}
+          </div>
+        )}
+      </a>
+    ))}
+  </div>
+</BaseLayout>
+
+<style>
+  h1 {
+    margin-bottom: 6px;
+  }
+  .grid {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.02);
+    transition: border 0.2s ease, transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card:hover,
+  .card:focus-visible {
+    border-color: rgba(34, 197, 94, 0.5);
+    transform: translateY(-2px);
+  }
+  .card__meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .tag,
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .pill {
+    text-transform: capitalize;
+    color: var(--accent);
+    border-color: rgba(34, 197, 94, 0.5);
+  }
+  .muted {
+    color: var(--muted);
+  }
+</style>

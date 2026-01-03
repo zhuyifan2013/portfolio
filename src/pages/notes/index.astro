@@ -1,0 +1,93 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const notes = (await getCollection('notes')).sort(
+  (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
+);
+---
+
+<BaseLayout title="Notes · Portfolio" description="Short notes and quick thoughts">
+  <h1>Notes</h1>
+  <p class="muted">Each note is a Markdown file; great for quick ideas or links.</p>
+  <div class="timeline">
+    {notes.map((note) => (
+      <a class="note" href={`/notes/${note.slug}/`}>
+        <div class="dot" />
+        <div class="body">
+          <div class="row">
+            <h3>{note.data.title}</h3>
+            <span class="muted">{note.data.publishedAt.toISOString().slice(0, 10)}</span>
+          </div>
+          {note.data.tags.length > 0 && (
+            <div class="tags">
+              {note.data.tags.map((tag) => (
+                <span class="tag">{tag}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </a>
+    ))}
+  </div>
+</BaseLayout>
+
+<style>
+  h1 {
+    margin-bottom: 6px;
+  }
+  .timeline {
+    margin-top: 18px;
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .note {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 12px;
+    padding-left: 6px;
+    color: inherit;
+  }
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: var(--accent);
+    margin-top: 6px;
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.12);
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: baseline;
+  }
+  .tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .muted {
+    color: var(--muted);
+  }
+  @media (max-width: 640px) {
+    .row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+  }
+</style>

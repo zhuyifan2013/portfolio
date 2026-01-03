@@ -1,0 +1,79 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+
+export async function getStaticPaths() {
+  const notes = await getCollection('notes');
+  return notes.map((note) => ({
+    params: { slug: note.slug },
+    props: { note },
+  }));
+}
+
+type Props = {
+  note: CollectionEntry<'notes'>;
+};
+
+const { note } = Astro.props as Props;
+const { Content } = await note.render();
+---
+
+<BaseLayout title={`${note.data.title} · Notes`} description="Quick note">
+  <article class="article panel">
+    <div class="meta">
+      <span class="muted">{note.data.publishedAt.toISOString().slice(0, 10)}</span>
+      {note.data.link && (
+        <a class="link" href={note.data.link} target="_blank" rel="noreferrer">Reference ↗</a>
+      )}
+    </div>
+    <h1>{note.data.title}</h1>
+    {note.data.tags.length > 0 && (
+      <div class="tags">
+        {note.data.tags.map((tag) => (
+          <span class="tag">{tag}</span>
+        ))}
+      </div>
+    )}
+    <div class="content">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .link {
+    color: var(--accent);
+  }
+  .tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 8px 0 14px;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .content :global(code) {
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+  .muted {
+    color: var(--muted);
+  }
+</style>

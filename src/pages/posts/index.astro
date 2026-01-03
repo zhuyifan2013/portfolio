@@ -1,0 +1,83 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('posts')).filter((item) => !item.data.draft).sort(
+  (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
+);
+---
+
+<BaseLayout title="Posts · Portfolio" description="Technical articles in Markdown/MDX">
+  <h1>Posts</h1>
+  <p class="muted">Long-form technical articles with frontmatter metadata.</p>
+  <div class="list">
+    {posts.map((post) => (
+      <a class="item" href={`/posts/${post.slug}/`}>
+        <div>
+          <h3>{post.data.title}</h3>
+          {post.data.description && <p class="muted">{post.data.description}</p>}
+          {post.data.tags.length > 0 && (
+            <div class="tags">
+              {post.data.tags.map((tag) => (
+                <span class="tag">{tag}</span>
+              ))}
+            </div>
+          )}
+        </div>
+        <span class="muted">{post.data.publishedAt.toISOString().slice(0, 10)}</span>
+      </a>
+    ))}
+  </div>
+</BaseLayout>
+
+<style>
+  h1 {
+    margin-bottom: 6px;
+  }
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .item {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    transition: border 0.2s ease, transform 0.2s ease;
+  }
+  .item:hover,
+  .item:focus-visible {
+    border-color: rgba(34, 197, 94, 0.5);
+    transform: translateY(-2px);
+  }
+  .tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .muted {
+    color: var(--muted);
+  }
+  @media (max-width: 640px) {
+    .item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

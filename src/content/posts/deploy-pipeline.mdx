@@ -1,0 +1,40 @@
+---
+title: "GitHub Actions → Nginx static deploy"
+description: "Simple pipeline: build on GitHub, upload to the domestic server, serve via Nginx."
+publishedAt: 2024-08-02
+tags:
+  - cicd
+  - nginx
+  - automation
+draft: false
+---
+
+Here is the minimal flow that keeps the origin server simple:
+
+1. Push changes or new Markdown.
+2. GitHub Actions runs `npm ci && npm run build`.
+3. Upload `dist/` to `/var/www/portfolio` on the domestic server via `rsync` or `scp`.
+4. Nginx serves the static directory—no Node runtime, no database.
+
+```yaml
+name: deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - uses: easingthemes/ssh-deploy@v5.0.0
+        with:
+          remote_dir: /var/www/portfolio
+          source: dist/
+```
+
+You can extend this to sync a CDN in front, but the core idea is to keep deployments predictable and observable.
