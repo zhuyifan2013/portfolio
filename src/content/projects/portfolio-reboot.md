@@ -1,5 +1,5 @@
 ---
-title: "Portfolio rebuild with Astro"
+title: "Aha Portfolio rebuild with Astro"
 description: "Static-first rebuild targeting mainland performance, GitHub Actions pipeline, and Nginx hosting."
 publishedAt: 2024-07-10
 status: active
