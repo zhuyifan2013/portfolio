@@ -1,263 +1,95 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import HomeSection from '../components/HomeSection.astro';
+import PostList from '../components/PostList.astro';
+import NoteList from '../components/NoteList.astro';
+import ProjectList from '../components/ProjectList.astro';
 import { getCollection } from 'astro:content';
 
 const posts = (await getCollection('posts')).filter((item) => !item.data.draft).sort(
   (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
 );
-const projects = (await getCollection('projects')).sort(
-  (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
-);
 const notes = (await getCollection('notes')).sort(
   (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
 );
+const projects = (await getCollection('projects')).sort(
+  (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
+);
+
+const latestNotes = notes.slice(0, 5);
+const latestProjects = projects.slice(0, 5);
 ---
 
 <BaseLayout title="Portfolio · Yifan Zhu" description="Projects, posts, and notes built with Astro">
-  <section class="hero panel">
+  <section class="intro panel">
     <p class="eyebrow">Portfolio / 技术博客</p>
-    <h1>Hi, I'm Yifan — engineer focused on reliable web systems.</h1>
-    <p class="lede">
-      This site collects my projects, deep-dive posts, and quick notes. Content is Markdown / MDX and
-      ships as static HTML for speed in mainland China.
+    <h1>Calm dashboard of work, writing, and fragments.</h1>
+    <p class="muted">
+      Low-saturation layout that surfaces long-form posts, quick notes, and current projects. Built in
+      Astro with content collections.
     </p>
-    <div class="hero-actions">
-      <a class="btn primary" href="/projects">View projects</a>
-      <a class="btn ghost" href="/posts">Read posts</a>
-    </div>
   </section>
 
-  <section class="section">
-    <header class="section__header">
-      <div>
-        <p class="eyebrow">Latest</p>
-        <h2>Featured projects</h2>
-      </div>
-      <a class="link" href="/projects">All projects →</a>
-    </header>
-    <div class="grid">
-      {projects.slice(0, 3).map((project) => (
-        <a class="card" href={`/projects/${project.slug}/`}>
-          <div class="card__meta">
-            <span class="pill">{project.data.status}</span>
-            <span class="muted">{project.data.publishedAt.toISOString().slice(0, 10)}</span>
-          </div>
-          <h3>{project.data.title}</h3>
-          {project.data.description && <p class="muted">{project.data.description}</p>}
-          {project.data.stack.length > 0 && (
-            <div class="tags">
-              {project.data.stack.map((tag) => (
-                <span class="tag">{tag}</span>
-              ))}
-            </div>
-          )}
-        </a>
-      ))}
-    </div>
-  </section>
+  <div class="dashboard">
+    <HomeSection title="Posts" href="/posts/">
+      <PostList posts={posts} />
+    </HomeSection>
 
-  <section class="section">
-    <header class="section__header">
-      <div>
-        <p class="eyebrow">Writing</p>
-        <h2>Recent posts</h2>
-      </div>
-      <a class="link" href="/posts">All posts →</a>
-    </header>
-    <div class="stack">
-      {posts.slice(0, 3).map((post) => (
-        <a class="row card" href={`/posts/${post.slug}/`}>
-          <div>
-            <h3>{post.data.title}</h3>
-            {post.data.description && <p class="muted">{post.data.description}</p>}
-            {post.data.tags.length > 0 && (
-              <div class="tags">
-                {post.data.tags.map((tag) => (
-                  <span class="tag">{tag}</span>
-                ))}
-              </div>
-            )}
-          </div>
-          <span class="muted">{post.data.publishedAt.toISOString().slice(0, 10)}</span>
-        </a>
-      ))}
-    </div>
-  </section>
+    <div class="right-column">
+      <HomeSection title={`Notes (${notes.length})`} href="/notes/">
+        <NoteList notes={latestNotes} />
+      </HomeSection>
 
-  <section class="section">
-    <header class="section__header">
-      <div>
-        <p class="eyebrow">Notes</p>
-        <h2>Quick thoughts</h2>
-      </div>
-      <a class="link" href="/notes">Notes timeline →</a>
-    </header>
-    <div class="stack">
-      {notes.slice(0, 4).map((note) => (
-        <a class="row card" href={`/notes/${note.slug}/`}>
-          <div>
-            <h3>{note.data.title}</h3>
-            {note.data.tags.length > 0 && (
-              <div class="tags">
-                {note.data.tags.map((tag) => (
-                  <span class="tag">{tag}</span>
-                ))}
-              </div>
-            )}
-          </div>
-          <span class="muted">{note.data.publishedAt.toISOString().slice(0, 10)}</span>
-        </a>
-      ))}
+      <HomeSection title="Projects" href="/projects/">
+        <ProjectList projects={latestProjects} />
+      </HomeSection>
     </div>
-  </section>
+  </div>
 </BaseLayout>
 
 <style>
-  .hero h1 {
-    font-size: clamp(1.9rem, 3vw, 2.8rem);
-    margin: 0.2em 0 0.1em;
-  }
-
-  .lede {
-    color: var(--muted);
-    margin: 0.4em 0 1em;
-    max-width: 720px;
-  }
-
-  .hero-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .section {
-    margin-top: 40px;
-  }
-
-  .section__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-
-  .grid {
-    display: grid;
-    gap: 12px;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  }
-
-  .stack {
+  .intro {
+    padding: 18px 18px 16px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
+    margin-bottom: 18px;
   }
 
-  .card {
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 14px 16px;
-    background: rgba(255, 255, 255, 0.02);
-    transition: border 0.2s ease, transform 0.2s ease;
-  }
-
-  .card:hover,
-  .card:focus-visible {
-    border-color: rgba(34, 197, 94, 0.5);
-    transform: translateY(-2px);
-  }
-
-  .row {
-    display: flex;
-    justify-content: space-between;
-    gap: 14px;
-    align-items: center;
-  }
-
-  .card__meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 4px;
-    color: var(--muted);
-    font-size: 0.9rem;
+  h1 {
+    margin: 0;
+    font-size: clamp(1.5rem, 2.6vw, 2.3rem);
+    letter-spacing: -0.02em;
   }
 
   .eyebrow {
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: var(--accent);
     margin: 0;
   }
 
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    font-weight: 600;
-    transition: background 0.2s ease, transform 0.2s ease, border 0.2s ease;
+  .dashboard {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 22px;
+    align-items: start;
   }
 
-  .btn.primary {
-    background: linear-gradient(120deg, #22c55e, #16a34a);
-    color: #041106;
-    border-color: rgba(34, 197, 94, 0.4);
-  }
-
-  .btn.ghost {
-    color: var(--text);
-    background: rgba(255, 255, 255, 0.04);
-  }
-
-  .btn:hover,
-  .btn:focus-visible {
-    transform: translateY(-1px);
-  }
-
-  .muted {
-    color: var(--muted);
-  }
-
-  .tags {
+  .right-column {
     display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-top: 6px;
+    flex-direction: column;
+    gap: 18px;
   }
 
-  .tag,
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 4px 10px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 0.85rem;
-  }
+  @media (max-width: 1024px) {
+    .dashboard {
+      grid-template-columns: 1fr;
+    }
 
-  .pill {
-    text-transform: capitalize;
-    color: var(--accent);
-    border-color: rgba(34, 197, 94, 0.5);
-  }
-
-  .link {
-    color: var(--muted);
-  }
-
-  @media (max-width: 640px) {
-    .row {
-      align-items: flex-start;
-      flex-direction: column;
+    .right-column {
+      gap: 14px;
     }
   }
 </style>

@@ -1,4 +1,5 @@
 ---
+import fs from 'node:fs';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
@@ -17,13 +18,35 @@ type Props = {
 
 const { post } = Astro.props as Props;
 const { Content } = await post.render();
+
+const formatDateTime = (date: Date) =>
+  new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
+
+const getTimes = async () => {
+  try {
+    const fileUrl = new URL(`../../content/${post.collection}/${post.id}`, import.meta.url);
+    const stats = await fs.promises.stat(fileUrl);
+    return { createdAt: stats.birthtime, updatedAt: stats.mtime };
+  } catch (err) {
+    const fallback = post.data.publishedAt ?? new Date();
+    return { createdAt: fallback, updatedAt: fallback };
+  }
+};
+
+const times = await getTimes();
 ---
 
 <BaseLayout title={`${post.data.title} · Posts`} description={post.data.description}>
   <article class="article panel">
-    <p class="muted">{post.data.publishedAt.toISOString().slice(0, 10)}</p>
+    <p class="muted">{formatDateTime(times.updatedAt)}</p>
     <h1>{post.data.title}</h1>
-    {post.data.description && <p class="muted">{post.data.description}</p>}
     {post.data.tags.length > 0 && (
       <div class="tags">
         {post.data.tags.map((tag) => (

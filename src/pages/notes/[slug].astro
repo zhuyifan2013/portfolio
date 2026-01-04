@@ -1,4 +1,5 @@
 ---
+import fs from 'node:fs';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
@@ -17,12 +18,35 @@ type Props = {
 
 const { note } = Astro.props as Props;
 const { Content } = await note.render();
+
+const formatDateTime = (date: Date) =>
+  new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
+
+const getTimes = async () => {
+  try {
+    const fileUrl = new URL(`../../content/${note.collection}/${note.id}`, import.meta.url);
+    const stats = await fs.promises.stat(fileUrl);
+    return { createdAt: stats.birthtime, updatedAt: stats.mtime };
+  } catch (err) {
+    const fallback = note.data.publishedAt ?? new Date();
+    return { createdAt: fallback, updatedAt: fallback };
+  }
+};
+
+const times = await getTimes();
 ---
 
 <BaseLayout title={`${note.data.title} · Notes`} description="Quick note">
   <article class="article panel">
     <div class="meta">
-      <span class="muted">{note.data.publishedAt.toISOString().slice(0, 10)}</span>
+      <span class="muted">{formatDateTime(times.updatedAt)}</span>
       {note.data.link && (
         <a class="link" href={note.data.link} target="_blank" rel="noreferrer">Reference ↗</a>
       )}

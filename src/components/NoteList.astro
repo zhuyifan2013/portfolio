@@ -1,11 +1,10 @@
 ---
 import fs from 'node:fs';
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
 
-const notes = (await getCollection('notes')).sort(
-  (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
-);
+type Props = {
+  notes: CollectionEntry<'notes'>[];
+};
 
 const formatDateTime = (date: Date) =>
   new Intl.DateTimeFormat('en-US', {
@@ -17,9 +16,9 @@ const formatDateTime = (date: Date) =>
     hour12: false,
   }).format(date);
 
-const getTimes = async (note) => {
+const getTimes = async (note: CollectionEntry<'notes'>) => {
   try {
-    const fileUrl = new URL(`../../content/${note.collection}/${note.id}`, import.meta.url);
+    const fileUrl = new URL(`../content/${note.collection}/${note.id}`, import.meta.url);
     const stats = await fs.promises.stat(fileUrl);
     return { createdAt: stats.birthtime, updatedAt: stats.mtime };
   } catch (err) {
@@ -29,7 +28,7 @@ const getTimes = async (note) => {
 };
 
 const renderedNotes = await Promise.all(
-  notes.map(async (note) => ({
+  (Astro.props as Props).notes.map(async (note) => ({
     note,
     times: await getTimes(note),
     Content: (await note.render()).Content,
@@ -37,60 +36,61 @@ const renderedNotes = await Promise.all(
 );
 ---
 
-<BaseLayout title="Notes · Portfolio" description="Short notes and quick thoughts">
-  <h1>Notes</h1>
-  <p class="muted">Fast stream of notes—just timestamp and body.</p>
-  <div class="feed">
-    {renderedNotes.map(({ note, times, Content }) => (
-      <article class="note-card">
-        <div class="note-meta">{formatDateTime(times.updatedAt)}</div>
-        <div class="note-body">
-          <Content />
-        </div>
-      </article>
-    ))}
-  </div>
-</BaseLayout>
+<div class="note-list">
+  {renderedNotes.map(({ note, times, Content }) => (
+    <article class="note-card" aria-label={note.data.title || 'Note'}>
+      <div class="note-meta">
+        <span class="muted">{formatDateTime(times.updatedAt)}</span>
+      </div>
+      <div class="note-body">
+        <Content />
+      </div>
+    </article>
+  ))}
+</div>
 
 <style>
-  h1 {
-    margin-bottom: 6px;
-  }
-  .feed {
-    margin-top: 18px;
+  .note-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
+
   .note-card {
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 12px 14px;
     background: rgba(255, 255, 255, 0.65);
   }
+
   .note-meta {
-    color: var(--muted);
-    font-size: 0.92rem;
-    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+    font-size: 0.9rem;
     margin-bottom: 6px;
   }
+
   .note-body :global(p) {
     margin: 0 0 0.6em;
     line-height: 1.7;
   }
+
   .note-body :global(p:last-child) {
     margin-bottom: 0;
   }
+
   .note-body :global(ul),
   .note-body :global(ol) {
     padding-left: 1.1em;
     margin: 0 0 0.6em;
   }
+
   .note-body :global(code) {
     background: rgba(0, 0, 0, 0.04);
     border-radius: 6px;
     padding: 2px 6px;
   }
+
   .note-body :global(pre) {
     background: rgba(0, 0, 0, 0.04);
     border-radius: 10px;

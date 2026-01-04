@@ -1,9 +1,39 @@
 ---
+import fs from 'node:fs';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 
 const posts = (await getCollection('posts')).filter((item) => !item.data.draft).sort(
   (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
+);
+
+const formatDateTime = (date: Date) =>
+  new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
+
+const getTimes = async (post) => {
+  try {
+    const fileUrl = new URL(`../../content/${post.collection}/${post.id}`, import.meta.url);
+    const stats = await fs.promises.stat(fileUrl);
+    return { createdAt: stats.birthtime, updatedAt: stats.mtime };
+  } catch (err) {
+    const fallback = post.data.publishedAt ?? new Date();
+    return { createdAt: fallback, updatedAt: fallback };
+  }
+};
+
+const renderedPosts = await Promise.all(
+  posts.map(async (post) => {
+    const times = await getTimes(post);
+    const { Content } = await post.render();
+    return { post, times, Content };
+  })
 );
 ---
 
@@ -11,20 +41,24 @@ const posts = (await getCollection('posts')).filter((item) => !item.data.draft).
   <h1>Posts</h1>
   <p class="muted">Long-form technical articles with frontmatter metadata.</p>
   <div class="list">
-    {posts.map((post) => (
+    {renderedPosts.map(({ post, times, Content }) => (
       <a class="item" href={`/posts/${post.slug}/`}>
-        <div>
-          <h3>{post.data.title}</h3>
-          {post.data.description && <p class="muted">{post.data.description}</p>}
-          {post.data.tags.length > 0 && (
-            <div class="tags">
-              {post.data.tags.map((tag) => (
-                <span class="tag">{tag}</span>
-              ))}
-            </div>
-          )}
+        <div class="content">
+          <div class="title-row">
+            <h3>{post.data.title}</h3>
+            <span class="muted">{formatDateTime(times.updatedAt)}</span>
+          </div>
+            {post.data.tags.length > 0 && (
+              <div class="tags">
+                {post.data.tags.map((tag) => (
+                  <span class="tag">{tag}</span>
+                ))}
+              </div>
+            )}
+          <div class="preview clamp">
+            <Content />
+          </div>
         </div>
-        <span class="muted">{post.data.publishedAt.toISOString().slice(0, 10)}</span>
       </a>
     ))}
   </div>
@@ -45,9 +79,7 @@ const posts = (await getCollection('posts')).filter((item) => !item.data.draft).
     border-radius: 14px;
     padding: 14px 16px;
     background: rgba(255, 255, 255, 0.02);
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
+    display: block;
     transition: border 0.2s ease, transform 0.2s ease;
   }
   .item:hover,
@@ -59,7 +91,7 @@ const posts = (await getCollection('posts')).filter((item) => !item.data.draft).
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
-    margin-top: 6px;
+    margin: 6px 0;
   }
   .tag {
     display: inline-flex;
@@ -74,10 +106,41 @@ const posts = (await getCollection('posts')).filter((item) => !item.data.draft).
   .muted {
     color: var(--muted);
   }
+
+  .title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .preview {
+    margin: 4px 0 0;
+    color: var(--text);
+    line-height: 1.6;
+    max-height: calc(1.6em * 8);
+    overflow: hidden;
+  }
+
+  .clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 8;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .preview :global(p) {
+    margin: 0 0 0.6em;
+  }
+
+  .preview :global(p:last-child) {
+    margin-bottom: 0;
+  }
   @media (max-width: 640px) {
-    .item {
+    .title-row {
       flex-direction: column;
       align-items: flex-start;
+      gap: 4px;
     }
   }
 </style>
