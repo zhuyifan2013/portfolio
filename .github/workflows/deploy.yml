@@ -1,0 +1,60 @@
+name: Build & Deploy (Astro)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Prepare SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          # 写入私钥
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          # 写入 known_hosts（用 fingerprint 校验）
+          ssh-keyscan -p ${{ secrets.DEPLOY_PORT }} -t ed25519 ${{ secrets.DEPLOY_HOST }} > ~/.ssh/known_hosts.tmp
+          ssh-keygen -lf ~/.ssh/known_hosts.tmp | awk '{print $2}' > ~/.ssh/fp.tmp
+
+          if [ "$(cat ~/.ssh/fp.tmp)" != "${{ secrets.DEPLOY_HOST_FINGERPRINT }}" ]; then
+            echo "ERROR: SSH host fingerprint mismatch"
+            echo "Expected: ${{ secrets.DEPLOY_HOST_FINGERPRINT }}"
+            echo "Got:      $(cat ~/.ssh/fp.tmp)"
+            exit 1
+          fi
+
+          mv ~/.ssh/known_hosts.tmp ~/.ssh/known_hosts
+          rm -f ~/.ssh/fp.tmp
+
+      - name: Deploy via rsync
+        run: |
+          rsync -az --delete \
+            -e "ssh -p ${{ secrets.DEPLOY_PORT }} -o StrictHostKeyChecking=yes" \
+            ./dist/ \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/
