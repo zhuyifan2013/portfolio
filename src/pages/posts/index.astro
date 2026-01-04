@@ -1,5 +1,6 @@
 ---
 import fs from 'node:fs';
+import { createMarkdownProcessor } from '@astrojs/markdown-remark';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 
@@ -28,11 +29,14 @@ const getTimes = async (post) => {
   }
 };
 
+const markdown = await createMarkdownProcessor();
+
 const renderedPosts = await Promise.all(
   posts.map(async (post) => {
+    const preview = (post.body || '').split(/\r?\n/).slice(0, 8).join('\n').trim();
     const times = await getTimes(post);
-    const { Content } = await post.render();
-    return { post, times, Content };
+    const { code } = await markdown.render(preview || '');
+    return { post, times, previewHtml: code };
   })
 );
 ---
@@ -41,7 +45,7 @@ const renderedPosts = await Promise.all(
   <h1>Posts</h1>
   <p class="muted">Long-form technical articles with frontmatter metadata.</p>
   <div class="list">
-    {renderedPosts.map(({ post, times, Content }) => (
+    {renderedPosts.map(({ post, times, previewHtml }) => (
       <a class="item" href={`/posts/${post.slug}/`}>
         <div class="content">
           <div class="title-row">
@@ -55,9 +59,7 @@ const renderedPosts = await Promise.all(
                 ))}
               </div>
             )}
-          <div class="preview clamp">
-            <Content />
-          </div>
+          <div class="preview" set:html={previewHtml} />
         </div>
       </a>
     ))}
@@ -118,15 +120,6 @@ const renderedPosts = await Promise.all(
     margin: 4px 0 0;
     color: var(--text);
     line-height: 1.6;
-    max-height: calc(1.6em * 8);
-    overflow: hidden;
-  }
-
-  .clamp {
-    display: -webkit-box;
-    -webkit-line-clamp: 8;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
   }
 
   .preview :global(p) {
