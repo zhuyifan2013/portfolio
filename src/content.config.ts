@@ -29,12 +29,7 @@ const projects = defineCollection({
 
 const notes = defineCollection({
   type: 'content',
-  schema: z.object({
-    title: z.string(),
-    publishedAt: z.date(),
-    tags: z.array(z.string()).default([]),
-    link: z.string().url().optional(),
-  }),
+  schema: z.object({}),
 });
 
 export const collections = { posts, projects, notes };

@@ -5,18 +5,25 @@ import PostList from '../components/PostList.astro';
 import NoteList from '../components/NoteList.astro';
 import ProjectList from '../components/ProjectList.astro';
 import { getCollection } from 'astro:content';
+import { getNoteTimes } from '../utils/note-metadata';
 
 const posts = (await getCollection('posts')).filter((item) => !item.data.draft).sort(
   (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
 );
-const notes = (await getCollection('notes')).sort(
-  (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
+const notes = await Promise.all(
+  (await getCollection('notes')).map(async (note) => ({
+    note,
+    times: await getNoteTimes(note),
+  }))
 );
 const projects = (await getCollection('projects')).sort(
   (a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf()
 );
 
-const latestNotes = notes.slice(0, 5);
+const latestNotes = notes
+  .sort((a, b) => b.times.createdAt.valueOf() - a.times.createdAt.valueOf())
+  .slice(0, 5)
+  .map(({ note }) => note);
 const latestProjects = projects.slice(0, 5);
 ---
 

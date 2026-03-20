@@ -1,46 +1,25 @@
 ---
-import fs from 'node:fs';
 import type { CollectionEntry } from 'astro:content';
+import { formatNoteDateTime, getNoteTimes } from '../utils/note-metadata';
 
 type Props = {
   notes: CollectionEntry<'notes'>[];
 };
 
-const formatDateTime = (date: Date) =>
-  new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(date);
-
-const getTimes = async (note: CollectionEntry<'notes'>) => {
-  try {
-    const fileUrl = new URL(`../content/${note.collection}/${note.id}`, import.meta.url);
-    const stats = await fs.promises.stat(fileUrl);
-    return { createdAt: stats.birthtime, updatedAt: stats.mtime };
-  } catch (err) {
-    const fallback = note.data.publishedAt ?? new Date();
-    return { createdAt: fallback, updatedAt: fallback };
-  }
-};
-
 const renderedNotes = await Promise.all(
   (Astro.props as Props).notes.map(async (note) => ({
     note,
-    times: await getTimes(note),
+    times: await getNoteTimes(note),
     Content: (await note.render()).Content,
   }))
 );
 ---
 
 <div class="note-list">
-  {renderedNotes.map(({ note, times, Content }) => (
-    <article class="note-card" aria-label={note.data.title || 'Note'}>
+  {renderedNotes.map(({ times, Content }) => (
+    <article class="note-card" aria-label="Note">
       <div class="note-meta">
-        <span class="muted">{formatDateTime(times.updatedAt)}</span>
+        <span class="muted">{formatNoteDateTime(times.createdAt)}</span>
       </div>
       <div class="note-body">
         <Content />
